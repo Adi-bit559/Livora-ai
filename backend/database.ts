@@ -6,10 +6,14 @@ declare global {
   var prismaGlobal: PrismaClient | undefined;
 }
 
-// Ensure data directory exists for SQLite
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Ensure data directory exists for local SQLite
+try {
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+} catch (e) {
+  // Ignored on read-only serverless filesystems
 }
 
 export const prisma = globalThis.prismaGlobal ?? new PrismaClient();

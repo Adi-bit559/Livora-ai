@@ -9,10 +9,15 @@ exports.disconnectDB = disconnectDB;
 const client_1 = require("@prisma/client");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-// Ensure data directory exists for SQLite
-const dataDir = path_1.default.join(__dirname, 'data');
-if (!fs_1.default.existsSync(dataDir)) {
-    fs_1.default.mkdirSync(dataDir, { recursive: true });
+// Ensure data directory exists for local SQLite
+try {
+    const dataDir = path_1.default.join(__dirname, 'data');
+    if (!fs_1.default.existsSync(dataDir)) {
+        fs_1.default.mkdirSync(dataDir, { recursive: true });
+    }
+}
+catch (e) {
+    // Ignored on read-only serverless filesystems
 }
 exports.prisma = globalThis.prismaGlobal ?? new client_1.PrismaClient();
 if (process.env.NODE_ENV !== 'production') {

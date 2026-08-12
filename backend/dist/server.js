@@ -74,4 +74,7 @@ async function bootstrap() {
         console.log(`💚 Health Check endpoint at http://localhost:${PORT}/health`);
     });
 }
-bootstrap();
+if (!process.env.VERCEL) {
+    bootstrap();
+}
+exports.default = app;
