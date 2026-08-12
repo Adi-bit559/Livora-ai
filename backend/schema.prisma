@@ -1,0 +1,310 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String           @id @default(uuid())
+  name               String
+  email              String           @unique
+  phone              String?
+  passwordHash       String
+  role               String           @default("RENTER") // RENTER, OWNER, ADMIN
+  profileImage       String?
+  city               String?
+  bio                String?
+  emailVerified      Boolean          @default(false)
+  phoneVerified      Boolean          @default(false)
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  properties         Property[]       @relation("OwnerProperties")
+  bookings           Booking[]        @relation("RenterBookings")
+  reviews            Review[]
+  roommateProfile    RoommateProfile?
+  savedProperties    SavedProperty[]
+  verifications      Verification[]   @relation("OwnerVerifications")
+  adminVerifications Verification[]   @relation("AdminVerifications")
+  notifications      Notification[]
+  sentMessages       Message[]        @relation("SentMessages")
+  receivedMessages   Message[]        @relation("ReceivedMessages")
+  searchHistories    SearchHistory[]
+  subscriptions      Subscription[]
+  transactions       Transaction[]
+}
+
+model Property {
+  id                 String             @id @default(uuid())
+  ownerId            String
+  owner              User               @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
+  title              String
+  description        String
+  propertyType       String             @default("PG") // PG, FLAT, HOSTEL, CO_LIVING, APARTMENT
+  address            String
+  locality           String
+  city               String
+  state              String
+  pincode            String
+  latitude           Float              @default(19.0760)
+  longitude          Float              @default(72.8777)
+  monthlyRentFrom    Int
+  monthlyRentTo      Int
+  securityDeposit    Int                @default(0)
+  genderPreference   String             @default("ANY")
+  foodAvailable      Boolean            @default(false)
+  furnished          String             @default("SEMI")
+  powerBackup        Boolean            @default(true)
+  isVerified         Boolean            @default(false)
+  verificationStatus String             @default("PENDING") // PENDING, VERIFIED, REJECTED, SUSPENDED
+  trustScore         Int                @default(75)
+  rating             Float              @default(4.5)
+  reviewCount        Int                @default(0)
+  occupancyRate      Float              @default(80.0)
+  availableFrom      DateTime           @default(now())
+  featured           Boolean            @default(false)
+  isDemoListing      Boolean            @default(true)
+  dataSource         String             @default("DEMO_SEEDED")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  rooms              Room[]
+  amenities          Amenity[]
+  reviews            Review[]
+  bookings           Booking[]
+  savedProperties    SavedProperty[]
+  verifications      Verification[]
+  vacancyHistories   VacancyHistory[]
+}
+
+model Room {
+  id               String      @id @default(uuid())
+  propertyId       String
+  property         Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomNumber       String
+  roomType         String      @default("SINGLE")
+  sharingType      String      @default("1 Person")
+  monthlyRent      Int
+  securityDeposit  Int         @default(0)
+  ac               Boolean     @default(false)
+  attachedBathroom Boolean     @default(false)
+  balcony          Boolean     @default(false)
+  available        Boolean     @default(true)
+  availableFrom    DateTime    @default(now())
+  totalBeds        Int         @default(1)
+  occupiedBeds     Int         @default(0)
+  description      String?
+
+  bookings         Booking[]
+}
+
+model Amenity {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name       String
+}
+
+model Review {
+  id              String   @id @default(uuid())
+  propertyId      String
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating          Float
+  comment         String
+  cleanliness     Int      @default(5)
+  location        Int      @default(5)
+  safety          Int      @default(5)
+  ownerBehaviour  Int      @default(5)
+  amenities       Int      @default(5)
+  valueForMoney   Int      @default(5)
+  listingAccuracy Int      @default(5)
+  createdAt       DateTime @default(now())
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  renterId        String
+  renter          User          @relation("RenterBookings", fields: [renterId], references: [id], onDelete: Cascade)
+  propertyId      String
+  property        Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomId          String
+  room            Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  moveInDate      DateTime
+  duration        Int           @default(11)
+  monthlyRent     Int
+  securityDeposit Int           @default(0)
+  platformFee     Int           @default(0) // 2% of monthlyRent
+  brokerage       Int           @default(0) // Always ₹0
+  totalAmount     Int
+  status          String        @default("PENDING") // PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED, EXPIRED
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  payment         Payment?
+  financialRecord BookingFinancial?
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  bookingId     String        @unique
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount        Int
+  currency      String        @default("INR")
+  status        String        @default("PENDING")
+  provider      String        @default("MOCK_RAZORPAY")
+  transactionId String        @default(uuid())
+  createdAt     DateTime      @default(now())
+}
+
+model RoommateProfile {
+  id                  String    @id @default(uuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetMin           Int       @default(5000)
+  budgetMax           Int       @default(25000)
+  preferredCity       String    @default("Mumbai")
+  preferredLocalities String    @default("Andheri, Bandra")
+  propertyTypes       String    @default("PG, CO_LIVING")
+  roomType            String    @default("DOUBLE")
+  sharingPreference   String    @default("Twin Share")
+  acPreference        Boolean   @default(true)
+  sleepSchedule       String    @default("EARLY_BIRD")
+  cleanlinessLevel    String    @default("HIGH")
+  socialLevel         String    @default("AMBIVERT")
+  foodPreference      String    @default("VEG")
+  smokingPreference   String    @default("NON_SMOKER")
+  petsPreference      String    @default("NO_PETS")
+  occupation          String?
+  college             String?
+  company             String?
+  hobbies             String    @default("Reading, Music, Travel")
+  moveInDate          DateTime? @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model RoommateMatch {
+  id         String   @id @default(uuid())
+  user1Id    String
+  user2Id    String
+  matchScore Int
+  breakdown  String
+  createdAt  DateTime @default(now())
+}
+
+model SavedProperty {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+}
+
+model Verification {
+  id                String             @id @default(uuid())
+  propertyId        String
+  property          Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  ownerId           String
+  owner             User               @relation("OwnerVerifications", fields: [ownerId], references: [id], onDelete: Cascade)
+  status            String             @default("PENDING") // PENDING, VERIFIED, REJECTED, SUSPENDED
+  documents         String             @default("{}")
+  reviewedByAdminId String?
+  reviewedByAdmin   User?              @relation("AdminVerifications", fields: [reviewedByAdminId], references: [id])
+  rejectionReason   String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  propertyId String?
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+model VacancyHistory {
+  id            String   @id @default(uuid())
+  propertyId    String
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  date          DateTime @default(now())
+  occupancyRate Float
+  availableBeds Int
+}
+
+model SearchHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query     String?
+  filters   String   @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id         String   @id @default(uuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  plan       String   @default("TRIAL") // TRIAL, BASIC, PRO
+  price      Int      @default(0) // 0 for TRIAL, 99 for BASIC, 199 for PRO
+  status     String   @default("TRIAL") // TRIAL, ACTIVE, EXPIRED, CANCELLED
+  startDate  DateTime @default(now())
+  endDate    DateTime
+  trialStart DateTime @default(now())
+  trialEnd   DateTime
+  autoRenew  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // SUBSCRIPTION, BOOKING
+  referenceId String?  // subscriptionId or bookingId
+  amount      Int
+  status      String   @default("SUCCESS") // SUCCESS, PENDING, FAILED
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model BookingFinancial {
+  id              String   @id @default(uuid())
+  bookingId       String   @unique
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rentAmount      Int
+  platformFee     Int      // 2% of monthly rent
+  brokerage       Int      @default(0)
+  securityDeposit Int      @default(0)
+  totalAmount     Int
+  status          String   @default("SUCCESS") // SUCCESS, PENDING, CANCELLED, REFUNDED
+  createdAt       DateTime @default(now())
+}
