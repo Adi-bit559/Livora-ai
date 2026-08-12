@@ -14,7 +14,7 @@ export default function App() {
   const [searchCity, setSearchCity] = useState('');
   const [searchLocality, setSearchLocality] = useState('');
   const [propertyType, setPropertyType] = useState('');
-  const [maxRent, setMaxRent] = useState<number>(40000);
+  const [maxRent, setMaxRent] = useState<number>(50000);
   const [acOnly, setAcOnly] = useState(false);
   const [foodOnly, setFoodOnly] = useState(false);
   const [powerBackupOnly, setPowerBackupOnly] = useState(false);
@@ -84,7 +84,7 @@ export default function App() {
       city: searchCity,
       locality: searchLocality,
       propertyType,
-      maxRent: maxRent < 40000 ? maxRent : undefined,
+      maxRent: maxRent < 50000 ? maxRent : undefined,
       ac: acOnly ? 'true' : undefined,
       food: foodOnly ? 'true' : undefined,
       powerBackup: powerBackupOnly ? 'true' : undefined,
@@ -98,7 +98,7 @@ export default function App() {
 
   useEffect(() => {
     fetchProperties();
-  }, [searchCity, propertyType, maxRent, acOnly, foodOnly, powerBackupOnly, verifiedOnly]);
+  }, [searchCity, searchLocality, propertyType, maxRent, acOnly, foodOnly, powerBackupOnly, verifiedOnly]);
 
   const fetchSaved = async () => {
     const res = await api.saved.list();
@@ -489,16 +489,30 @@ export default function App() {
 
               {/* Quick City Chips */}
               <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-300 items-center">
-                <span>Popular Cities:</span>
-                {['Mumbai', 'Pune', 'Bengaluru', 'Hyderabad', 'Delhi', 'Gurugram'].map((city) => (
-                  <button
-                    key={city}
-                    onClick={() => setSearchCity(city)}
-                    className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  >
-                    {city}
-                  </button>
-                ))}
+                <span className="font-semibold text-slate-200">Cities across India:</span>
+                {['All India 🇮🇳', 'Mumbai', 'Bengaluru', 'Delhi NCR', 'Gurugram', 'Noida', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kochi', 'Indore', 'Chandigarh', 'Goa'].map((city) => {
+                  const isActive = (city === 'All India 🇮🇳' && !searchCity) || searchCity === city;
+                  return (
+                    <button
+                      key={city}
+                      onClick={() => {
+                        if (city === 'All India 🇮🇳') {
+                          setSearchCity('');
+                          setSearchLocality('');
+                        } else {
+                          setSearchCity(city);
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300'
+                          : 'bg-white/10 hover:bg-white/20 text-white'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -554,7 +568,7 @@ export default function App() {
                 <input
                   type="range"
                   min="5000"
-                  max="40000"
+                  max="50000"
                   step="1000"
                   value={maxRent}
                   onChange={(e) => setMaxRent(parseInt(e.target.value))}
@@ -592,8 +606,20 @@ export default function App() {
           ) : properties.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <p className="text-lg font-semibold">No properties matched your criteria.</p>
-              <button onClick={() => { setSearchCity(''); setPropertyType(''); setMaxRent(40000); setAcOnly(false); }} className="mt-3 text-sm text-blue-600 font-semibold hover:underline">
-                Clear Filters
+              <button
+                onClick={() => {
+                  setSearchCity('');
+                  setSearchLocality('');
+                  setPropertyType('');
+                  setMaxRent(50000);
+                  setAcOnly(false);
+                  setFoodOnly(false);
+                  setPowerBackupOnly(false);
+                  setVerifiedOnly(false);
+                }}
+                className="mt-3 text-sm text-blue-600 font-semibold hover:underline"
+              >
+                Clear All Filters
               </button>
             </div>
           ) : (
